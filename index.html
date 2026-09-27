@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Responsive Image Gallery</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f6f8;
+      color: #222;
+      min-height: 100vh;
+    }
+
+    header {
+      text-align: center;
+      padding: 45px 20px 25px;
+    }
+
+    header h1 {
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      margin-bottom: 10px;
+    }
+
+    header p {
+      color: #666;
+    }
+
+    /* Filters */
+    .filters {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 10px 20px 30px;
+    }
+
+    .filter-btn {
+      border: none;
+      padding: 10px 20px;
+      border-radius: 30px;
+      background: #fff;
+      color: #333;
+      cursor: pointer;
+      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+      transition: 0.3s ease;
+    }
+
+    .filter-btn:hover,
+    .filter-btn.active {
+      background: #222;
+      color: #fff;
+      transform: translateY(-2px);
+    }
+
+    /* Gallery */
+    .gallery {
+      width: min(1200px, 92%);
+      margin: 0 auto 50px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+
+    .gallery-item {
+      position: relative;
+      height: 260px;
+      overflow: hidden;
+      border-radius: 14px;
+      cursor: pointer;
+      background: #ddd;
+      box-shadow: 0 5px 18px rgba(0, 0, 0, 0.08);
+      transition:
+        transform 0.3s ease,
+        box-shadow 0.3s ease,
+        opacity 0.3s ease;
+    }
+
+    .gallery-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.5s ease;
+    }
+
+    .gallery-item:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
+    }
+
+    .gallery-item:hover img {
+      transform: scale(1.08);
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: flex-end;
+      padding: 20px;
+      color: white;
+      background: linear-gradient(
+        to top,
+        rgba(0, 0, 0, 0.7),
+        transparent 60%
+      );
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .gallery-item:hover .overlay {
+      opacity: 1;
+    }
+
+    .overlay h3 {
+      font-size: 1.2rem;
+    }
+
+    .gallery-item.hidden {
+      display: none;
+    }
+
+    /* Lightbox */
+    .lightbox {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      background: rgba(0, 0, 0, 0.92);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      opacity: 0;
+      visibility: hidden;
+      transition:
+        opacity 0.3s ease,
+        visibility 0.3s ease;
+    }
+
+    .lightbox.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .lightbox-content {
+      max-width: 85%;
+      max-height: 80vh;
+      object-fit: contain;
+      border-radius: 8px;
+      transform: scale(0.9);
+      transition: transform 0.3s ease;
+    }
+
+    .lightbox.active .lightbox-content {
+      transform: scale(1);
+    }
+
+    .close,
+    .prev,
+    .next {
+      position: absolute;
+      border: none;
+      color: white;
+      background: rgba(255, 255, 255, 0.12);
+      cursor: pointer;
+      transition:
+        background 0.3s ease,
+        transform 0.3s ease;
+    }
+
+    .close:hover,
+    .prev:hover,
+    .next:hover {
+      background: rgba(255, 255, 255, 0.25);
+      transform: scale(1.08);
+    }
+
+    .close {
+      top: 25px;
+      right: 30px;
+      width: 45px;
+      height: 45px;
+      border-radius: 50%;
+      font-size: 28px;
+    }
+
+    .prev,
+    .next {
+      top: 50%;
+      transform: translateY(-50%);
+      width: 50px;
+      height: 60px;
+      border-radius: 8px;
+      font-size: 30px;
+    }
+
+    .prev:hover,
+    .next:hover {
+      transform: translateY(-50%) scale(1.08);
+    }
+
+    .prev {
+      left: 25px;
+    }
+
+    .next {
+      right: 25px;
+    }
+
+    .caption {
+      position: absolute;
+      bottom: 25px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: white;
+      font-size: 1rem;
+      text-align: center;
+    }
+
+    /* Tablet */
+    @media (max-width: 850px) {
+      .gallery {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    /* Mobile */
+    @media (max-width: 550px) {
+      header {
+        padding-top: 30px;
+      }
+
+      .gallery {
+        grid-template-columns: 1fr;
+      }
+
+      .gallery-item {
+        height: 230px;
+      }
+
+      .prev,
+      .next {
+        width: 42px;
+        height: 52px;
+      }
+
+      .prev {
+        left: 10px;
+      }
+
+      .next {
+        right: 10px;
+      }
+
+      .lightbox-content {
+        max-width: 92%;
+        max-height: 75vh;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <h1>Image Gallery</h1>
+    <p>Explore nature, cities, and architecture.</p>
+  </header>
+
+  <!-- Category Filters -->
+  <div class="filters">
+    <button class="filter-btn active" data-filter="all">All</button>
+    <button class="filter-btn" data-filter="nature">Nature</button>
+    <button class="filter-btn" data-filter="city">City</button>
+    <button class="filter-btn" data-filter="architecture">Architecture</button>
+  </div>
+
+  <!-- Gallery -->
+  <main class="gallery">
+
+    <div class="gallery-item" data-category="nature">
+      <img
+        src="https://picsum.photos/id/10/800/600"
+        alt="Mountain landscape"
+      />
+      <div class="overlay"><h3>Mountains</h3></div>
+    </div>
+
+    <div class="gallery-item" data-category="city">
+      <img
+        src="https://picsum.photos/id/1011/800/600"
+        alt="City view"
+      />
+      <div class="overlay"><h3>City View</h3></div>
+    </div>
+
+    <div class="gallery-item" data-category="nature">
+      <img
+        src="https://picsum.photos/id/1015/800/600"
+        alt="River and mountains"
+      />
+      <div class="overlay"><h3>River</h3></div>
+    </div>
+
+    <div class="gallery-item" data-category="architecture">
+      <img
+        src="https://picsum.photos/id/1048/800/600"
+        alt="Architecture"
+      />
+      <div class="overlay"><h3>Architecture</h3></div>
+    </div>
+
+    <div class="gallery-item" data-category="nature">
+      <img
+        src="https://picsum.photos/id/1039/800/600"
+        alt="Forest"
+      />
+      <div class="overlay"><h3>Forest</h3></div>
+    </div>
+
+    <div class="gallery-item" data-category="city">
+      <img
+        src="https://picsum.photos/id/1067/800/600"
+        alt="Urban scene"
+      />
+      <div class="overlay"><h3>Urban Life</h3></div>
+    </div>
+
+    <div class="gallery-item" data-category="architecture">
+      <img
+        src="https://picsum.photos/id/1076/800/600"
+        alt="Modern building"
+      />
+      <div class="overlay"><h3>Modern Design</h3></div>
+    </div>
+
+    <div class="gallery-item" data-category="nature">
+      <img
+        src="https://picsum.photos/id/1080/800/600"
+        alt="Natural landscape"
+      />
+      <div class="overlay"><h3>Landscape</h3></div>
+    </div>
+
+    <div class="gallery-item" data-category="city">
+      <img
+        src="https://picsum.photos/id/122/800/600"
+        alt="City street"
+      />
+      <div class="overlay"><h3>City Street</h3></div>
+    </div>
+
+  </main>
+
+  <!-- Lightbox -->
+  <div class="lightbox" id="lightbox">
+    <button class="close" aria-label="Close">&times;</button>
+    <button class="prev" aria-label="Previous image">&#10094;</button>
+
+    <img
+      class="lightbox-content"
+      id="lightboxImage"
+      src=""
+      alt=""
+    />
+
+    <button class="next" aria-label="Next image">&#10095;</button>
+
+    <div class="caption" id="caption"></div>
+  </div>
+
+  <script>
+    const galleryItems = [...document.querySelectorAll(".gallery-item")];
+    const filterButtons = document.querySelectorAll(".filter-btn");
+
+    const lightbox = document.getElementById("lightbox");
+    const lightboxImage = document.getElementById("lightboxImage");
+    const caption = document.getElementById("caption");
+
+    const closeButton = document.querySelector(".close");
+    const prevButton = document.querySelector(".prev");
+    const nextButton = document.querySelector(".next");
+
+    let visibleItems = [...galleryItems];
+    let currentIndex = 0;
+
+    // -------------------------
+    // Category Filtering
+    // -------------------------
+    filterButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        filterButtons.forEach((btn) => btn.classList.remove("active"));
+        button.classList.add("active");
+
+        const filter = button.dataset.filter;
+
+        galleryItems.forEach((item) => {
+          const category = item.dataset.category;
+
+          if (filter === "all" || category === filter) {
+            item.classList.remove("hidden");
+          } else {
+            item.classList.add("hidden");
+          }
+        });
+
+        // Update items available to lightbox navigation
+        visibleItems = galleryItems.filter(
+          (item) => !item.classList.contains("hidden")
+        );
+      });
+    });
+
+    // -------------------------
+    // Open Lightbox
+    // -------------------------
+    galleryItems.forEach((item) => {
+      item.addEventListener("click", () => {
+        visibleItems = galleryItems.filter(
+          (galleryItem) => !galleryItem.classList.contains("hidden")
+        );
+
+        currentIndex = visibleItems.indexOf(item);
+
+        showImage(currentIndex);
+        lightbox.classList.add("active");
+
+        document.body.style.overflow = "hidden";
+      });
+    });
+
+    function showImage(index) {
+      const item = visibleItems[index];
+
+      if (!item) return;
+
+      const image = item.querySelector("img");
+      const title = item.querySelector("h3");
+
+      lightboxImage.src = image.src;
+      lightboxImage.alt = image.alt;
+      caption.textContent = title ? title.textContent : image.alt;
+    }
+
+    // -------------------------
+    // Previous Image
+    // -------------------------
+    function previousImage() {
+      currentIndex--;
+
+      if (currentIndex < 0) {
+        currentIndex = visibleItems.length - 1;
+      }
+
+      showImage(currentIndex);
+    }
+
+    // -------------------------
+    // Next Image
+    // -------------------------
+    function nextImage() {
+      currentIndex++;
+
+      if (currentIndex >= visibleItems.length) {
+        currentIndex = 0;
+      }
+
+      showImage(currentIndex);
+    }
+
+    prevButton.addEventListener("click", previousImage);
+    nextButton.addEventListener("click", nextImage);
+
+    // -------------------------
+    // Close Lightbox
+    // -------------------------
+    function closeLightbox() {
+      lightbox.classList.remove("active");
+      document.body.style.overflow = "";
+    }
+
+    closeButton.addEventListener("click", closeLightbox);
+
+    // Close when clicking the dark background
+    lightbox.addEventListener("click", (event) => {
+      if (event.target === lightbox) {
+        closeLightbox();
+      }
+    });
+
+    // -------------------------
+    // Keyboard Navigation
+    // -------------------------
+    document.addEventListener("keydown", (event) => {
+      if (!lightbox.classList.contains("active")) return;
+
+      if (event.key === "ArrowRight") {
+        nextImage();
+      }
+
+      if (event.key === "ArrowLeft") {
+        previousImage();
+      }
+
+      if (event.key === "Escape") {
+        closeLightbox();
+      }
+    });
+  </script>
+
+</body>
+</html>
